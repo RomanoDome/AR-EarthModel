@@ -1,0 +1,27 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+#activate-xr {
+    position: fixed;
+    top: 30px;
+    left: 20px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border: solid 1px #338;
+    color: #338;
+    border-radius: 16px;
+    transition: all 0.2s ease-in-out;
+}
+
+#activate-xr:hover {
+    background-color: #338;
+    color: #fff;
+}
+
+.point-details-container {
+    padding: 10px;
+    color: #fff;
+}
