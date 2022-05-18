@@ -4,9 +4,9 @@ import { GLTFLoader } from "https://cdn.skypack.dev/three@0.129.0/examples/jsm/l
 import { mockData } from './mockData.js';
 import { HTMLMesh } from "https://cdn.skypack.dev/three@0.129.0/examples/jsm/interactive/HTMLMesh.js";
 
-let scene, camera, renderer, earthmesh, mouse, raycaster, earthPivot, cameraControl, selectedObject;
+let scene, camera, renderer, raycaster, mouse, earth, earthPivot, cameraControl, selectedObject;
 let points = [];
-let earthMoving = false;
+let earthMoving = true;
 const EARTH_RADIUS = 5;
 const DEG = Math.PI/180;
 const MIN_CAMERA_Z = 6.5;
@@ -20,12 +20,12 @@ function init()
 {			
 	scene = new THREE.Scene();
 
-	camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+	camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = MAX_CAMERA_Z;
 
 	renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-	renderer.setSize( window.innerWidth, window.innerHeight );
-	document.body.appendChild( renderer.domElement );
+	renderer.setSize(window.innerWidth, window.innerHeight);
+	document.body.appendChild(renderer.domElement);
 
     cameraControl = new OrbitControls(camera, renderer.domElement);
     cameraControl.enableDamping = true;
@@ -44,12 +44,9 @@ function init()
         //specularMap : new THREE.TextureLoader().load('images/earthspec1k.jpg'), //add a specular texture for changing the 'shininess' of the object with a texture
         specular    : new THREE.Color('grey')
     });
-    earthmesh = new THREE.Mesh(geometry, material)
-	scene.add(earthmesh);
-
-    const sphere = new THREE.Mesh(geometry, material);
+    earth = new THREE.Mesh(geometry, material);
     earthPivot = new THREE.Group();
-    earthPivot.add(sphere);
+    earthPivot.add(earth);
     scene.add(earthPivot);
 
     let light = new THREE.AmbientLight(0xffffff, 0.5);
@@ -112,13 +109,13 @@ function createDetailsContent(point) {
 
 function animate()
 {
-    requestAnimationFrame( animate );
+    requestAnimationFrame(animate);
 
     if (earthMoving)
         earthPivot.rotation.y += 0.001;
         
     cameraControl.update();
-	renderer.render( scene, camera );
+	renderer.render(scene, camera);
 }
 
 function onWindowResize() {
@@ -170,10 +167,10 @@ async function activateXR() {
     document.body.appendChild(canvas);
     const gl = canvas.getContext("webgl", { xrCompatible: true });
 
-    const ARScene = new THREE.Scene();
+    const ARscene = new THREE.Scene();
 
     const light = new THREE.AmbientLight(0xeeeeee);
-    ARScene.add(light);
+    ARscene.add(light);
 
     // Set up the WebGLRenderer, which handles rendering to the session's base layer.
     const ARrenderer = new THREE.WebGLRenderer({
@@ -207,7 +204,7 @@ async function activateXR() {
     loader.load("https://immersive-web.github.io/webxr-samples/media/gltf/reticle/reticle.gltf", function (gltf) {
       reticle = gltf.scene;
       reticle.visible = false;
-      ARScene.add(reticle);
+      ARscene.add(reticle);
     });
 
     let ARearth = earth.clone();
@@ -240,12 +237,12 @@ async function activateXR() {
                 const view = pose.views[0];
 
                 const viewport = session.renderState.baseLayer.getViewport(view);
-                renderer.setSize(viewport.width, viewport.height)
+                ARrenderer.setSize(viewport.width, viewport.height)
 
                 // Use the view's transform matrix and projection matrix to configure the THREE.camera.
-                camera.matrix.fromArray(view.transform.matrix)
-                camera.projectionMatrix.fromArray(view.projectionMatrix);
-                camera.updateMatrixWorld(true);
+                ARcamera.matrix.fromArray(view.transform.matrix)
+                ARcamera.projectionMatrix.fromArray(view.projectionMatrix);
+                ARcamera.updateMatrixWorld(true);
 
                 const hitTestResults = frame.getHitTestResults(hitTestSource);
                 if (hitTestResults.length > 0 && reticle) {
@@ -258,7 +255,7 @@ async function activateXR() {
         }
 
         if (ARearth && earthMoving)
-            ARearth.rotation.y += 0.001
+            ARearth.rotation.y += 0.001;
 
         ARrenderer.render(ARscene, ARcamera)
     }
