@@ -4,20 +4,14 @@ import { GLTFLoader } from "https://cdn.skypack.dev/three@0.129.0/examples/jsm/l
 import { mockData } from './mockData.js';
 import { HTMLMesh } from "https://cdn.skypack.dev/three@0.129.0/examples/jsm/interactive/HTMLMesh.js";
 
-// A STATE OBJECT WITH A THREE.CLOCK INSTANCE
-var state = {
-	clock: new THREE.Clock(),
-	frame: 0,
-	maxFrame: 90,
-	fps: 30,
-	per: 0
-};
 let scene, camera, renderer, earthmesh, mouse, raycaster, earthPivot, cameraControl, selectedObject;
 let points = [];
+let earthMoving = false;
 const EARTH_RADIUS = 5;
 const DEG = Math.PI/180;
 const MIN_CAMERA_Z = 6.5;
 const MAX_CAMERA_Z = 20;
+const FLUID_PLACEMENT_MODE = true;
 
 init();
 animate();
@@ -41,9 +35,6 @@ function init()
     mouse = new THREE.Vector2()
 
     raycaster = new THREE.Raycaster();
-
-    // START CLOCK
-	state.clock.start();
 	
 	var geometry = new THREE.SphereGeometry(EARTH_RADIUS, 32, 32);
 	var material = new THREE.MeshPhongMaterial({
@@ -130,15 +121,12 @@ function createDetailsContent(point) {
 
 function animate()
 {
+    if (earthMoving)
+        earthPivot.rotation.y += 0.001;
+        
     cameraControl.update();
-
 	requestAnimationFrame( animate );
 	renderer.render( scene, camera );
-
-    var secs = state.clock.getDelta();
-	state.per = state.frame / state.maxFrame;
-	//cloudMesh.rotation.y += 1 / 8 * state.clock.getDelta();
-    //earthMesh.rotation.y += 1;
 }
 
 function onWindowResize() {
@@ -217,7 +205,6 @@ async function activateXR() {
     // A 'local' reference space has a native origin that is located
     // near the viewer's position at the time the session was created.
     const referenceSpace = await session.requestReferenceSpace('local');
-
     // Create another XRReferenceSpace that has the viewer as the origin.
     const viewerSpace = await session.requestReferenceSpace('viewer');
     // Perform hit testing using the viewer as origin.
@@ -231,29 +218,29 @@ async function activateXR() {
       ARScene.add(reticle);
     });
 
+    let ARearth = earth.clone();
+    ARearth.scale.set(0.02, 0.02, 0.02);
     let objectPlaced = false;
 
     session.addEventListener("select", (event) => {
-      if (earthPivot) {
-        const clone = earthPivot.clone();
-        clone.position.copy(reticle.position);
-        ARScene.add(clone);
-        objectPlaced = true;
-      }
-    });
+        if (!objectPlaced || FLUID_PLACEMENT_MODE) { 
+          ARearth.position.copy(reticle.position);
+          ARearth.position.y += 0.2;
+          if (!objectPlaced) ARscene.add(ARearth);
+          objectPlaced = true;
+          reticle.visible = FLUID_PLACEMENT_MODE;
+        }
+      });
 
     // Create a render loop that allows us to draw on the AR view.
     const onXRFrame = (time, frame) => {
       // Queue up the next draw request.
       session.requestAnimationFrame(onXRFrame);
-
       // Bind the graphics framebuffer to the baseLayer's framebuffer
       gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer)
 
-      // Retrieve the pose of the device.
-      // XRFrame.getViewerPose can return null while the session attempts to establish tracking.
-        if (!objectPlaced) {
-            
+      const pose = frame.getViewerPose(referenceSpace);
+      if (pose) {
             const pose = frame.getViewerPose(referenceSpace);
             if (pose) {
                 // In mobile AR, we only have one view.
@@ -269,16 +256,18 @@ async function activateXR() {
 
                 const hitTestResults = frame.getHitTestResults(hitTestSource);
                 if (hitTestResults.length > 0 && reticle) {
-                const hitPose = hitTestResults[0].getPose(referenceSpace);
-                reticle.visible = true;
-                reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z)
-                reticle.updateMatrixWorld(true);
+                    const hitPose = hitTestResults[0].getPose(referenceSpace);
+                    reticle.visible = !objectPlaced || FLUID_PLACEMENT_MODE;
+                    reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z)
+                    reticle.updateMatrixWorld(true);
                 }
-
-                // Render the scene with THREE.WebGLRenderer.
-                renderer.render(scene, camera)
             }
         }
+
+        if (ARearth && earthMoving)
+            ARearth.rotation.y += 0.001
+
+        ARrenderer.render(ARscene, ARcamera)
     }
     session.requestAnimationFrame(onXRFrame);
 }
