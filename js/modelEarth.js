@@ -52,15 +52,6 @@ function init()
     earthPivot.add(sphere);
     scene.add(earthPivot);
 
-    const hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.6 );
-    hemiLight.color.setHSL( 0.6, 1, 0.6 );
-    hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
-    hemiLight.position.set( 0, 50, 0 );
-	scene.add( hemiLight );
-    const hemiLightHelper = new THREE.HemisphereLightHelper( hemiLight, 10 );
-    scene.add( hemiLightHelper );
-    scene.add( hemiLight );
-
     let light = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(light);
     light = new THREE.SpotLight(0xffffff, 0.8);
@@ -111,7 +102,7 @@ function createDetailsContent(point) {
 
     container.appendChild(title);
     container.appendChild(text);
-    container.style.visibility = 'hidden';
+    container.style.visibility = "hidden";
     container.style.position = "fixed";
 
     document.body.appendChild(container);
@@ -121,11 +112,12 @@ function createDetailsContent(point) {
 
 function animate()
 {
+    requestAnimationFrame( animate );
+
     if (earthMoving)
         earthPivot.rotation.y += 0.001;
         
     cameraControl.update();
-	requestAnimationFrame( animate );
 	renderer.render( scene, camera );
 }
 
@@ -184,19 +176,19 @@ async function activateXR() {
     ARScene.add(light);
 
     // Set up the WebGLRenderer, which handles rendering to the session's base layer.
-    const renderer = new THREE.WebGLRenderer({
+    const ARrenderer = new THREE.WebGLRenderer({
       alpha: true,
       preserveDrawingBuffer: true,
       canvas: canvas,
       context: gl
     });
-    renderer.autoClear = false;
+    ARrenderer.autoClear = false;
 
     // The API directly updates the camera matrices.
     // Disable matrix auto updates so three.js doesn't attempt
     // to handle the matrices independently.
-    const camera = new THREE.PerspectiveCamera();
-    camera.matrixAutoUpdate = false;
+    const ARcamera = new THREE.PerspectiveCamera();
+    ARcamera.matrixAutoUpdate = false;
 
     // Initialize a WebXR session using "immersive-ar".
     const session = await navigator.xr.requestSession("immersive-ar", { requiredFeatures: ['hit-test'] });
@@ -226,7 +218,8 @@ async function activateXR() {
         if (!objectPlaced || FLUID_PLACEMENT_MODE) { 
           ARearth.position.copy(reticle.position);
           ARearth.position.y += 0.2;
-          if (!objectPlaced) ARscene.add(ARearth);
+          if (!objectPlaced)
+            ARscene.add(ARearth);
           objectPlaced = true;
           reticle.visible = FLUID_PLACEMENT_MODE;
         }
