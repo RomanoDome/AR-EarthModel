@@ -1,5 +1,6 @@
 import * as THREE from "https://cdn.skypack.dev/three@0.129.0";
 import { OrbitControls } from "https://cdn.skypack.dev/three@0.129.0/examples/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "https://cdn.skypack.dev/three@0.129.0/examples/jsm/loaders/GLTFLoader.js";
 import { mockData } from './mockData.js';
 import { HTMLMesh } from "https://cdn.skypack.dev/three@0.129.0/examples/jsm/interactive/HTMLMesh.js";
 
@@ -222,7 +223,7 @@ async function activateXR() {
     // Perform hit testing using the viewer as origin.
     const hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
 
-    const loader = new THREE.GLTFLoader();
+    const loader = new GLTFLoader();
     let reticle;
     loader.load("https://immersive-web.github.io/webxr-samples/media/gltf/reticle/reticle.gltf", function (gltf) {
       reticle = gltf.scene;
